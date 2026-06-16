@@ -121,7 +121,7 @@ SessionManager.SendText() → kirim pesan
 - [x] Grup: kirim ke JID `...@g.us`
 - [x] Retry queue untuk pesan gagal (SQLite-backed)
 - [x] Webhook retry dengan exponential backoff
-- [ ] Kirim dokumen/PDF (backlog)
+- [x] Kirim dokumen/PDF
 
 **Prioritas rendah (backlog):**
 - Broadcast / bulk send

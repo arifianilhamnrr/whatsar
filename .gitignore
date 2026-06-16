@@ -37,3 +37,4 @@ dist/
 # Local dev
 tmp-cookies.txt
 terminals/
+data/send-payload.json

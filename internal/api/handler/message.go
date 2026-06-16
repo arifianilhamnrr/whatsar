@@ -20,9 +20,13 @@ type sendMessageReq struct {
 	To          string `json:"to"`
 	Text        string `json:"text"`
 	Type        string `json:"type"`
-	ImageURL    string `json:"image_url"`
-	ImageBase64 string `json:"image_base64"`
-	Caption     string `json:"caption"`
+	ImageURL        string `json:"image_url"`
+	ImageBase64     string `json:"image_base64"`
+	DocumentURL     string `json:"document_url"`
+	DocumentBase64  string `json:"document_base64"`
+	FileName        string `json:"filename"`
+	MimeType        string `json:"mimetype"`
+	Caption         string `json:"caption"`
 	ReplyTo     string `json:"reply_to"`
 	QuotedText  string `json:"quoted_text"`
 	Retry       bool   `json:"retry"`
@@ -51,18 +55,26 @@ func (h *Message) Send(w http.ResponseWriter, r *http.Request) {
 		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "image_url atau image_base64 wajib untuk tipe image")
 		return
 	}
+	if msgType == "document" && req.DocumentURL == "" && req.DocumentBase64 == "" {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "document_url atau document_base64 wajib untuk tipe document")
+		return
+	}
 
 	result, err := h.Manager.SendOutgoing(r.Context(), wa.OutgoingMessage{
-		SessionID:  req.SessionID,
-		To:         req.To,
-		Type:       msgType,
-		Text:       req.Text,
-		ImageURL:   req.ImageURL,
-		ImageB64:   req.ImageBase64,
-		Caption:    req.Caption,
-		ReplyTo:    req.ReplyTo,
-		QuotedText: req.QuotedText,
-		QueueRetry: req.Retry,
+		SessionID:   req.SessionID,
+		To:          req.To,
+		Type:        msgType,
+		Text:        req.Text,
+		ImageURL:    req.ImageURL,
+		ImageB64:    req.ImageBase64,
+		DocumentURL: req.DocumentURL,
+		DocumentB64: req.DocumentBase64,
+		FileName:    req.FileName,
+		MimeType:    req.MimeType,
+		Caption:     req.Caption,
+		ReplyTo:     req.ReplyTo,
+		QuotedText:  req.QuotedText,
+		QueueRetry:  req.Retry,
 	})
 	if err != nil {
 		httputil.Error(w, http.StatusBadRequest, "SEND_FAILED", err.Error())

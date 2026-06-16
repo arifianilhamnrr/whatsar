@@ -48,9 +48,18 @@ func (m *Manager) processQueueItem(ctx context.Context, item *store.QueueRecord)
 		ReplyTo:   item.ReplyTo,
 		QuotedText: item.QuotedText,
 	}
-	if item.MsgType == "image" && item.MediaURL == "" && item.Body != "" {
-		out.ImageB64 = item.Body
-		out.Text = ""
+	switch item.MsgType {
+	case "image":
+		if item.MediaURL == "" && item.Body != "" {
+			out.ImageB64 = item.Body
+			out.Text = ""
+		}
+	case "document":
+		out.DocumentURL = item.MediaURL
+		if item.MediaURL == "" && item.Body != "" {
+			out.DocumentB64 = item.Body
+		}
+		out.FileName = item.Caption
 	}
 
 	sess, err := m.Get(item.SessionID)

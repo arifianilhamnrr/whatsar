@@ -16,6 +16,7 @@
   <a href="#format">Format Response</a>
   <a href="#session">Session</a>
   <a href="#kirim">Kirim Pesan</a>
+  <a href="#media">Media &amp; File</a>
   <a href="#webhook">Webhook</a>
   <a href="#contoh">Contoh Kode</a>
   <a href="#tips">Tips</a>
@@ -91,7 +92,20 @@
 
   <div class="endpoint">
     <div class="endpoint-head"><span class="method get">GET</span> <span class="endpoint-path">/health</span></div>
-    <div class="endpoint-body">Cek server hidup. Tanpa API key.</div>
+    <div class="endpoint-body">
+      <p>Cek server hidup. Tanpa API key.</p>
+<pre>{
+  "success": true,
+  "data": {
+    "status": "ok",
+    "uptime_seconds": 3600,
+    "sessions_total": 1,
+    "sessions_connected": 1,
+    "queue_pending": 0
+  }
+}</pre>
+      <p><code>queue_pending</code> = jumlah pesan di antrian retry (lihat <code>retry: true</code>).</p>
+    </div>
   </div>
 
   <div class="endpoint">
@@ -165,14 +179,18 @@
         <tbody>
           <tr><td><code>session_id</code></td><td>✅</td><td>UUID session yang <code>connected</code></td></tr>
           <tr><td><code>to</code></td><td>✅</td><td>Nomor <code>628...</code>, JID grup <code>120363...@g.us</code>, atau JID lengkap</td></tr>
-          <tr><td><code>type</code></td><td>—</td><td><code>text</code> (default) atau <code>image</code></td></tr>
-          <tr><td><code>text</code></td><td>✅*</td><td>Isi pesan teks (*wajib untuk type text)</td></tr>
-          <tr><td><code>image_url</code></td><td>—</td><td>URL gambar (type image)</td></tr>
-          <tr><td><code>image_base64</code></td><td>—</td><td>Gambar base64 (alternatif URL)</td></tr>
-          <tr><td><code>caption</code></td><td>—</td><td>Caption gambar</td></tr>
+          <tr><td><code>type</code></td><td>—</td><td><code>text</code> (default), <code>image</code>, atau <code>document</code></td></tr>
+          <tr><td><code>text</code></td><td>✅*</td><td>Isi pesan teks (*wajib untuk <code>type: text</code>)</td></tr>
+          <tr><td><code>image_url</code></td><td>—</td><td>URL gambar (<code>type: image</code>)</td></tr>
+          <tr><td><code>image_base64</code></td><td>—</td><td>Gambar base64 (alternatif <code>image_url</code>)</td></tr>
+          <tr><td><code>document_url</code></td><td>—</td><td>URL file (<code>type: document</code>)</td></tr>
+          <tr><td><code>document_base64</code></td><td>—</td><td>File base64 (alternatif <code>document_url</code>)</td></tr>
+          <tr><td><code>filename</code></td><td>—</td><td>Nama file saat diterima (mis. <code>laporan.pdf</code>)</td></tr>
+          <tr><td><code>mimetype</code></td><td>—</td><td>MIME type (mis. <code>application/pdf</code>) — opsional, auto-detect</td></tr>
+          <tr><td><code>caption</code></td><td>—</td><td>Caption gambar atau dokumen</td></tr>
           <tr><td><code>reply_to</code></td><td>—</td><td>ID pesan WA untuk reply/quote</td></tr>
           <tr><td><code>quoted_text</code></td><td>—</td><td>Teks yang di-quote (opsional)</td></tr>
-          <tr><td><code>retry</code></td><td>—</td><td><code>true</code> = masuk antrian retry kalau gagal kirim</td></tr>
+          <tr><td><code>retry</code></td><td>—</td><td><code>true</code> = masuk antrian retry kalau gagal kirim (backoff eksponensial, max 5x)</td></tr>
         </tbody>
       </table>
 <pre>curl -X POST {{.BaseURL}}/api/v1/messages/send \
@@ -195,6 +213,96 @@
     <div class="endpoint-head"><span class="method get">GET</span> <span class="endpoint-path">/api/v1/messages?session_id={id}&amp;limit=50&amp;offset=0</span></div>
     <div class="endpoint-body">Log pesan masuk/keluar per session.</div>
   </div>
+</section>
+
+<!-- Media & File -->
+<section class="docs-section" id="media">
+  <h2>Media &amp; File</h2>
+  <p>Tiga tipe pesan yang didukung saat ini:</p>
+  <table class="docs-table">
+    <thead><tr><th><code>type</code></th><th>Kegunaan</th><th>Field utama</th></tr></thead>
+    <tbody>
+      <tr><td><code>text</code></td><td>Notif teks biasa</td><td><code>text</code></td></tr>
+      <tr><td><code>image</code></td><td>Foto dengan preview di chat</td><td><code>image_url</code> atau <code>image_base64</code></td></tr>
+      <tr><td><code>document</code></td><td>File lampiran (PDF, Word, Excel, ZIP, dll.)</td><td><code>document_url</code> atau <code>document_base64</code></td></tr>
+    </tbody>
+  </table>
+  <div class="tip" style="margin-top:1rem;">
+    <strong>Gambar vs dokumen:</strong> kirim <code>.jpg</code> pakai <code>type: image</code> supaya tampil preview.
+    Pakai <code>type: document</code> kalau mau user download sebagai file.
+  </div>
+
+  <h3>Kirim gambar (URL)</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>curl -X POST {{.BaseURL}}/api/v1/messages/send \
+  -H "X-API-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "abd4a712-8333-4a92-8eb1-bd922e72e47a",
+    "to": "6289876543210",
+    "type": "image",
+    "image_url": "https://example.com/banner.jpg",
+    "caption": "Promo minggu ini!"
+  }'</pre>
+    </div>
+  </div>
+
+  <h3>Kirim dokumen / PDF</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>curl -X POST {{.BaseURL}}/api/v1/messages/send \
+  -H "X-API-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "abd4a712-8333-4a92-8eb1-bd922e72e47a",
+    "to": "6289876543210",
+    "type": "document",
+    "document_url": "https://example.com/laporan.pdf",
+    "filename": "laporan-juni.pdf",
+    "mimetype": "application/pdf",
+    "caption": "Laporan bulan ini"
+  }'</pre>
+      <p>Untuk file lokal, encode ke base64 lalu kirim lewat <code>document_base64</code> + <code>filename</code>.</p>
+      <p>Di Windows, bisa pakai script bantu:</p>
+<pre>.\scripts\send-document.ps1 -To 6289876543210 -File "C:\path\file.pdf"</pre>
+    </div>
+  </div>
+
+  <h3>Reply / quote pesan</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>{
+  "session_id": "abd4a712-8333-4a92-8eb1-bd922e72e47a",
+  "to": "6289876543210",
+  "text": "Siap kak, sudah diproses",
+  "reply_to": "3EB0ABCDEF123456",
+  "quoted_text": "Kak pesanan saya sudah sampai?"
+}</pre>
+    </div>
+  </div>
+
+  <h3>Kirim ke grup</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>{
+  "session_id": "abd4a712-8333-4a92-8eb1-bd922e72e47a",
+  "to": "120363123456789012@g.us",
+  "text": "Reminder meeting jam 10"
+}</pre>
+      <p><code>to</code> bisa JID grup (<code>...@g.us</code>) atau nomor personal <code>628...</code>.</p>
+    </div>
+  </div>
+
+  <h3>Batas ukuran</h3>
+  <table class="docs-table">
+    <thead><tr><th>Tipe</th><th>Limit API</th><th>Catatan</th></tr></thead>
+    <tbody>
+      <tr><td>Gambar</td><td>16 MB</td><td>URL atau base64</td></tr>
+      <tr><td>Dokumen</td><td>64 MB</td><td>PDF, DOCX, XLSX, ZIP, dll.</td></tr>
+      <tr><td>Video / audio</td><td>—</td><td>Belum didukung (coming soon)</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <!-- Webhook -->
@@ -282,6 +390,23 @@ public function kirim(string $nomor, string $pesan): array
     return $response->json();
 }
 
+public function kirimDokumen(string $nomor, string $path, ?string $caption = null): array
+{
+    $response = Http::withHeaders([
+        'X-API-Key' => config('services.whatsar.key'),
+    ])->timeout(120)->post(config('services.whatsar.url') . '/api/v1/messages/send', [
+        'session_id'      => config('services.whatsar.session_id'),
+        'to'              => $nomor,
+        'type'            => 'document',
+        'document_base64' => base64_encode(file_get_contents($path)),
+        'filename'        => basename($path),
+        'mimetype'        => mime_content_type($path),
+        'caption'         => $caption,
+    ]);
+
+    return $response->json();
+}
+
 // .env project kamu:
 // WHATSAR_URL={{.BaseURL}}
 // WHATSAR_KEY=your-api-key-dari-pengaturan
@@ -292,7 +417,9 @@ public function kirim(string $nomor, string $pesan): array
   <h3>Node.js</h3>
   <div class="endpoint">
     <div class="endpoint-body">
-<pre>async function kirimNotif(to, text) {
+<pre>import fs from 'node:fs';
+
+async function kirimNotif(to, text) {
   const res = await fetch(`${process.env.WHATSAR_URL}/api/v1/messages/send`, {
     method: 'POST',
     headers: {
@@ -306,6 +433,27 @@ public function kirim(string $nomor, string $pesan): array
     }),
   });
   return res.json();
+}
+
+async function kirimDokumen(to, filePath, caption = '') {
+  const data = fs.readFileSync(filePath);
+  const res = await fetch(`${process.env.WHATSAR_URL}/api/v1/messages/send`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': process.env.WHATSAR_KEY,
+    },
+    body: JSON.stringify({
+      session_id: process.env.WHATSAR_SESSION_ID,
+      to,
+      type: 'document',
+      document_base64: data.toString('base64'),
+      filename: filePath.split(/[\\/]/).pop(),
+      caption,
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+  return res.json();
 }</pre>
     </div>
   </div>
@@ -313,7 +461,7 @@ public function kirim(string $nomor, string $pesan): array
   <h3>Python</h3>
   <div class="endpoint">
     <div class="endpoint-body">
-<pre>import os, requests
+<pre>import os, base64, mimetypes, requests
 
 def kirim_notif(nomor: str, pesan: str):
     r = requests.post(
@@ -325,6 +473,27 @@ def kirim_notif(nomor: str, pesan: str):
             "text": pesan,
         },
         timeout=15,
+    )
+    r.raise_for_status()
+    return r.json()
+
+def kirim_dokumen(nomor: str, path: str, caption: str = ""):
+    mime, _ = mimetypes.guess_type(path)
+    with open(path, "rb") as f:
+        payload = {
+            "session_id": os.environ["WHATSAR_SESSION_ID"],
+            "to": nomor,
+            "type": "document",
+            "document_base64": base64.b64encode(f.read()).decode(),
+            "filename": os.path.basename(path),
+            "mimetype": mime or "application/octet-stream",
+            "caption": caption,
+        }
+    r = requests.post(
+        f"{os.environ['WHATSAR_URL']}/api/v1/messages/send",
+        headers={"X-API-Key": os.environ["WHATSAR_KEY"]},
+        json=payload,
+        timeout=120,
     )
     r.raise_for_status()
     return r.json()</pre>
@@ -341,6 +510,8 @@ def kirim_notif(nomor: str, pesan: str):
     <li><strong>Jangan hardcode API key</strong> — simpan di <code>.env</code> project, jangan commit ke git.</li>
     <li><strong>Deploy via tunnel</strong> — Cloudflare Tunnel / reverse proxy supaya project cloud bisa akses Whatsar di VPS/STB.</li>
     <li><strong>Anti-spam</strong> — rate limit 60 req/menit; untuk bulk notif, queue di sisi project kamu.</li>
+    <li><strong>File besar</strong> — set timeout HTTP client ≥ 120 detik; untuk dokumen lokal, pertimbangkan upload ke storage dulu lalu pakai <code>document_url</code>.</li>
+    <li><strong>Retry otomatis</strong> — tambah <code>"retry": true</code> di body; pantau <code>queue_pending</code> di <code>/health</code>.</li>
     <li><strong>Session terputus?</strong> — cek dashboard; biasanya auto-reconnect. Kalau gagal, scan QR ulang.</li>
   </ul>
 </section>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,11 +22,15 @@ import (
 type OutgoingMessage struct {
 	SessionID  string
 	To         string
-	Type       string // text, image
-	Text       string
-	ImageURL   string
-	ImageB64   string
-	Caption    string
+	Type         string // text, image, document
+	Text         string
+	ImageURL     string
+	ImageB64     string
+	DocumentURL  string
+	DocumentB64  string
+	FileName     string
+	MimeType     string
+	Caption      string
 	ReplyTo    string
 	QuotedText string
 	QueueRetry bool
@@ -84,6 +89,16 @@ func (m *Manager) enqueueOutgoing(ctx context.Context, msg OutgoingMessage, last
 	}
 	if msg.ImageB64 != "" {
 		rec.Body = msg.ImageB64
+	} else if msg.DocumentB64 != "" {
+		rec.Body = msg.DocumentB64
+	}
+	if msg.DocumentURL != "" {
+		rec.MediaURL = msg.DocumentURL
+	}
+	if msg.FileName != "" {
+		if rec.Caption == "" {
+			rec.Caption = msg.FileName
+		}
 	}
 	if err := m.db.EnqueueMessage(ctx, rec); err != nil {
 		return "", err
@@ -107,6 +122,9 @@ func (s *Session) sendOutgoing(ctx context.Context, msg OutgoingMessage) (string
 	}
 	if msgType == "image" {
 		return s.sendImageMessage(ctx, jid, msg)
+	}
+	if msgType == "document" {
+		return s.sendDocumentMessage(ctx, jid, msg)
 	}
 	return "", fmt.Errorf("tipe pesan tidak didukung: %s", msg.Type)
 }
@@ -163,6 +181,53 @@ func (s *Session) sendImageMessage(ctx context.Context, jid types.JID, msg Outgo
 	return resp.ID, nil
 }
 
+func (s *Session) sendDocumentMessage(ctx context.Context, jid types.JID, msg OutgoingMessage) (string, error) {
+	data, fileName, err := loadDocumentBytes(msg)
+	if err != nil {
+		return "", err
+	}
+
+	uploaded, err := s.client.Upload(ctx, data, whatsmeow.MediaDocument)
+	if err != nil {
+		return "", fmt.Errorf("upload document: %w", err)
+	}
+
+	mime := strings.TrimSpace(msg.MimeType)
+	if mime == "" {
+		mime = http.DetectContentType(data)
+		if mime == "application/octet-stream" {
+			mime = "application/pdf"
+		}
+	}
+
+	docMsg := &waProto.DocumentMessage{
+		FileName:      proto.String(fileName),
+		Title:         proto.String(strings.TrimSuffix(fileName, filepath.Ext(fileName))),
+		Caption:       proto.String(msg.Caption),
+		Mimetype:      proto.String(mime),
+		URL:           proto.String(uploaded.URL),
+		DirectPath:    proto.String(uploaded.DirectPath),
+		MediaKey:      uploaded.MediaKey,
+		FileEncSHA256: uploaded.FileEncSHA256,
+		FileSHA256:    uploaded.FileSHA256,
+		FileLength:    proto.Uint64(uint64(len(data))),
+	}
+	if msg.ReplyTo != "" {
+		docMsg.ContextInfo = buildContextInfo(msg.ReplyTo, msg.QuotedText)
+	}
+
+	resp, err := s.client.SendMessage(ctx, jid, &waProto.Message{DocumentMessage: docMsg})
+	if err != nil {
+		return "", fmt.Errorf("send document: %w", err)
+	}
+	body := fileName
+	if msg.Caption != "" {
+		body = msg.Caption
+	}
+	s.saveOutgoing(jid, body, resp.ID)
+	return resp.ID, nil
+}
+
 func buildTextProto(text, replyTo, quotedText string) *waProto.Message {
 	if replyTo != "" {
 		return &waProto.Message{
@@ -183,7 +248,24 @@ func buildContextInfo(replyTo, quotedText string) *waProto.ContextInfo {
 	return ci
 }
 
+func loadDocumentBytes(msg OutgoingMessage) ([]byte, string, error) {
+	data, err := loadMediaBytes(msg.DocumentURL, msg.DocumentB64, 64<<20, "document_url atau document_base64 wajib untuk tipe document")
+	if err != nil {
+		return nil, "", err
+	}
+	fileName := strings.TrimSpace(msg.FileName)
+	if fileName == "" {
+		fileName = "document.pdf"
+	}
+	return data, fileName, nil
+}
+
 func loadImageBytes(url, b64 string) ([]byte, error) {
+	data, err := loadMediaBytes(url, b64, 16<<20, "image_url atau image_base64 wajib untuk tipe image")
+	return data, err
+}
+
+func loadMediaBytes(url, b64 string, maxSize int64, emptyErr string) ([]byte, error) {
 	if b64 != "" {
 		raw := b64
 		if idx := strings.Index(raw, ","); idx >= 0 {
@@ -196,7 +278,7 @@ func loadImageBytes(url, b64 string) ([]byte, error) {
 		return data, nil
 	}
 	if url == "" {
-		return nil, fmt.Errorf("image_url atau image_base64 wajib untuk tipe image")
+		return nil, fmt.Errorf("%s", emptyErr)
 	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -211,8 +293,7 @@ func loadImageBytes(url, b64 string) ([]byte, error) {
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("fetch image: HTTP %d", resp.StatusCode)
 	}
-	const maxImage = 16 << 20
-	data, err := io.ReadAll(io.LimitReader(resp.Body, maxImage))
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxSize))
 	if err != nil {
 		return nil, err
 	}
