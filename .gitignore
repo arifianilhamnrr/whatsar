@@ -1,0 +1,39 @@
+# Binary
+whatsar
+whatsar.exe
+whatsar-cli.exe
+*.exe
+*.exe~
+
+# Data & secrets
+data/
+.whatsar.lock
+*.db
+.env
+config/.credentials
+
+# Go
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+dist/
+*.tar.gz
+*.zip
+
+# Local dev
+tmp-cookies.txt
+terminals/

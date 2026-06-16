@@ -1,0 +1,106 @@
+{{define "settings"}}
+{{template "layout_head" .}}
+{{template "settings_page" .}}
+{{template "layout_foot" .}}
+{{end}}
+
+{{define "settings_page"}}
+<header>
+  <h1>Pengaturan</h1>
+  <p>Kelola API key dan keamanan admin panel.</p>
+</header>
+
+<div class="settings-stack">
+
+  {{if or .Success .Error .APIKeySuccess .APIKeyError}}
+  <div>
+    {{if .Success}}<div class="alert ok"><strong>{{.Success}}</strong></div>{{end}}
+    {{if .Error}}<div class="alert err"><strong>{{.Error}}</strong></div>{{end}}
+    {{if .APIKeySuccess}}<div class="alert ok"><strong>{{.APIKeySuccess}}</strong></div>{{end}}
+    {{if .APIKeyError}}<div class="alert err"><strong>{{.APIKeyError}}</strong></div>{{end}}
+  </div>
+  {{end}}
+
+  {{if .NewAPIKey}}
+  <div class="key-reveal">
+    <p class="key-reveal__label">API key baru — salin sekarang, tidak ditampilkan lagi setelah refresh</p>
+    <p class="key-reveal__value mono" id="new-api-key">{{.NewAPIKey}}</p>
+    <button type="button" class="outline btn-sm" style="margin-top:.75rem;"
+            onclick="navigator.clipboard.writeText(document.getElementById('new-api-key').textContent); this.textContent='Tersalin!'; setTimeout(()=>this.textContent='Salin ke clipboard', 2000)">
+      Salin ke clipboard
+    </button>
+  </div>
+  {{end}}
+
+  <div class="settings-grid">
+
+    <!-- API Key -->
+    <article class="settings-card">
+      <div class="settings-card__head">
+        <h2>API Key</h2>
+        <p>Header <code>X-API-Key</code> untuk integrasi notif WhatsApp.</p>
+      </div>
+      <div class="settings-card__body">
+        <div class="key-current">
+          <div style="min-width:0;flex:1;">
+            <div class="key-current__label">Key aktif</div>
+            <div class="key-current__value mono">{{if .HasAPIKey}}{{.APIKeyMasked}}{{else}}—{{end}}</div>
+          </div>
+          <a href="/admin/docs#auth" role="button" class="outline btn-sm">Cara pakai</a>
+        </div>
+
+        <div class="settings-pane">
+          <h3>Generate otomatis</h3>
+          <p>Key random <code>wsk_...</code>. Key lama langsung tidak valid.</p>
+          <form method="POST" action="/admin/settings/api-key/regenerate"
+                onsubmit="return confirm('Generate API key baru? Key lama langsung tidak valid.')">
+            <button type="submit">Generate Baru</button>
+          </form>
+          <small>Disarankan untuk production.</small>
+        </div>
+
+        <div class="settings-pane">
+          <h3>Set manual</h3>
+          <p>Key buatan sendiri, min. 16 karakter.</p>
+          <form method="POST" action="/admin/settings/api-key">
+            <label>API key
+              <input type="text" name="api_key" placeholder="wsk_..." minlength="16" required>
+            </label>
+            <button type="submit" class="outline">Simpan</button>
+          </form>
+        </div>
+      </div>
+    </article>
+
+    <!-- Password -->
+    <article class="settings-card">
+      <div class="settings-card__head">
+        <h2>Password Admin</h2>
+        <p>Login ke <code>/admin</code>. Disimpan sebagai hash di database.</p>
+      </div>
+      <div class="settings-card__body">
+        <form method="POST" action="/admin/settings/password" class="settings-form" style="margin-top:auto;">
+          <label>Password saat ini
+            <input type="password" name="current_password" required autocomplete="current-password">
+          </label>
+          <label>Password baru
+            <input type="password" name="new_password" required minlength="6" autocomplete="new-password">
+          </label>
+          <label>Konfirmasi password baru
+            <input type="password" name="confirm_password" required minlength="6" autocomplete="new-password">
+          </label>
+          <button type="submit">Simpan Password</button>
+        </form>
+        <small style="display:block;margin-top:.75rem;color:var(--pico-muted-color);">Minimal 6 karakter.</small>
+      </div>
+    </article>
+
+  </div>
+
+  <nav class="settings-footer">
+    <a href="/admin/docs">Dokumentasi API</a>
+    <a href="/admin">← Dashboard</a>
+  </nav>
+
+</div>
+{{end}}

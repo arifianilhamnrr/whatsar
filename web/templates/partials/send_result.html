@@ -1,0 +1,7 @@
+{{define "partials/send_result.html"}}
+{{if .Error}}
+<p style="color:crimson;">❌ {{.Error}}</p>
+{{else}}
+<p style="color:green;">✅ Terkirim (id: <span class="mono">{{.MessageID}}</span>)</p>
+{{end}}
+{{end}}

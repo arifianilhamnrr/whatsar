@@ -1,0 +1,345 @@
+{{define "docs"}}
+{{template "layout_head" .}}
+{{template "docs_page" .}}
+{{template "layout_foot" .}}
+{{end}}
+
+{{define "docs_page"}}
+<header>
+  <h1>Dokumentasi API</h1>
+  <p>Panduan integrasi Whatsar ke project kamu — kirim notif WhatsApp, terima balasan via webhook.</p>
+</header>
+
+<nav class="docs-nav">
+  <a href="#mulai">Mulai Cepat</a>
+  <a href="#auth">Autentikasi</a>
+  <a href="#format">Format Response</a>
+  <a href="#session">Session</a>
+  <a href="#kirim">Kirim Pesan</a>
+  <a href="#webhook">Webhook</a>
+  <a href="#contoh">Contoh Kode</a>
+  <a href="#tips">Tips</a>
+</nav>
+
+<!-- Mulai Cepat -->
+<section class="docs-section" id="mulai">
+  <h2>Mulai Cepat — Notif WhatsApp</h2>
+  <p>Alur paling umum buat project notifikasi (Laravel, Node, Python, dll.):</p>
+  <ol class="steps">
+    <li><strong>Pairing session</strong> — buat session di <a href="/admin/sessions/new">Admin UI</a>, scan QR WhatsApp.</li>
+    <li><strong>Ambil <code>session_id</code></strong> — dari dashboard atau <code>GET /api/v1/sessions</code>.</li>
+    <li><strong>Simpan API key</strong> — set <code>WHATSAR_API_KEY</code> di <code>.env</code> server Whatsar.</li>
+    <li><strong>Kirim notif</strong> — <code>POST /api/v1/messages/send</code> dari backend project kamu.</li>
+    <li><strong>(Opsional) Webhook</strong> — daftarkan URL project kamu buat terima pesan masuk / balasan user.</li>
+  </ol>
+  <div class="tip" style="margin-top:1rem;">
+    Base URL: <code>{{.BaseURL}}</code>
+    {{if .PublicURLOverride}}
+    — dari <code>WHATSAR_PUBLIC_URL</code> di <code>.env</code>.
+    {{else}}
+    — otomatis dari domain yang kamu pakai buka halaman ini (mis. <code>https://whatsar.dev</code> saat deploy).
+    {{end}}
+  </div>
+</section>
+
+<!-- Auth -->
+<section class="docs-section" id="auth">
+  <h2>Autentikasi</h2>
+  <p>Semua endpoint <code>/api/v1/*</code> butuh API key. Kirim lewat header (disarankan):</p>
+  <pre style="background:#1e293b;color:#e2e8f0;padding:.75rem 1rem;border-radius:6px;font-size:.82rem;">X-API-Key: your-api-key-here</pre>
+  <p>API key bisa di-<strong>generate atau diubah</strong> dari <a href="/admin/settings">Pengaturan</a> — tersimpan di database, tidak perlu edit <code>.env</code> manual.</p>
+  <p>Alternatif via query string: <code>?api_key=your-api-key-here</code> (kurang aman, hindari di production).</p>
+  <p>Endpoint <code>/health</code> <strong>tidak</strong> butuh API key — cocok buat monitoring uptime.</p>
+</section>
+
+<!-- Format -->
+<section class="docs-section" id="format">
+  <h2>Format Response</h2>
+  <p>Semua response API berbentuk JSON envelope:</p>
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method get">RESPONSE</span> <span>sukses &amp; error</span></div>
+    <div class="endpoint-body">
+<pre>{
+  "success": true,
+  "data": { ... },
+  "meta": { "request_id": "uuid" }
+}
+
+{
+  "success": false,
+  "error": { "code": "SEND_FAILED", "message": "..." },
+  "meta": { "request_id": "uuid" }
+}</pre>
+    </div>
+  </div>
+  <p>Rate limit: <strong>60 request/menit</strong> per API key.</p>
+</section>
+
+<!-- Health -->
+<section class="docs-section" id="session">
+  <h2>Session</h2>
+  <p>Satu session = satu nomor WhatsApp yang ter-pair. Status penting sebelum kirim pesan:</p>
+  <table class="docs-table">
+    <thead><tr><th>Status</th><th>Arti</th></tr></thead>
+    <tbody>
+      <tr><td><code>connected</code></td><td>Siap kirim pesan ✅</td></tr>
+      <tr><td><code>qr_ready</code></td><td>Menunggu scan QR</td></tr>
+      <tr><td><code>connecting</code></td><td>Sedang menghubungkan</td></tr>
+      <tr><td><code>failed</code></td><td>Gagal — buat session baru</td></tr>
+    </tbody>
+  </table>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method get">GET</span> <span class="endpoint-path">/health</span></div>
+    <div class="endpoint-body">Cek server hidup. Tanpa API key.</div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method post">POST</span> <span class="endpoint-path">/api/v1/sessions</span></div>
+    <div class="endpoint-body">
+      <p>Buat session baru (untuk pairing QR).</p>
+<pre>curl -X POST {{.BaseURL}}/api/v1/sessions \
+  -H "X-API-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "notif-toko"}'</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method get">GET</span> <span class="endpoint-path">/api/v1/sessions</span></div>
+    <div class="endpoint-body">List semua session + status <code>connected</code>.</div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method get">GET</span> <span class="endpoint-path">/api/v1/sessions/{id}</span></div>
+    <div class="endpoint-body">Detail satu session.</div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method get">GET</span> <span class="endpoint-path">/api/v1/sessions/{id}/status</span></div>
+    <div class="endpoint-body">
+      <p>Cek cepat sebelum kirim notif.</p>
+<pre>{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "status": "connected",
+    "connected": true,
+    "phone": "6281234567890"
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method get">GET</span> <span class="endpoint-path">/api/v1/sessions/{id}/qr</span></div>
+    <div class="endpoint-body">
+      <p>Ambil QR code (JSON). Field <code>image_base64</code> = PNG siap tampil.</p>
+<pre>{
+  "success": true,
+  "data": {
+    "code": "2@...",
+    "image_base64": "iVBOR...",
+    "status": "qr_ready"
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method delete">DELETE</span> <span class="endpoint-path">/api/v1/sessions/{id}</span></div>
+    <div class="endpoint-body">Hapus session + logout device.</div>
+  </div>
+</section>
+
+<!-- Kirim Pesan -->
+<section class="docs-section" id="kirim">
+  <h2>Kirim Pesan — Inti Notifikasi</h2>
+  <p>Ini endpoint utama buat kirim notif order, OTP, reminder, dll.</p>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method post">POST</span> <span class="endpoint-path">/api/v1/messages/send</span></div>
+    <div class="endpoint-body">
+      <table class="docs-table">
+        <thead><tr><th>Field</th><th>Wajib</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><code>session_id</code></td><td>✅</td><td>UUID session yang <code>connected</code></td></tr>
+          <tr><td><code>to</code></td><td>✅</td><td>Nomor tujuan: <code>6281234567890</code> atau <code>+62 812-3456-7890</code></td></tr>
+          <tr><td><code>text</code></td><td>✅</td><td>Isi pesan (plain text)</td></tr>
+        </tbody>
+      </table>
+<pre>curl -X POST {{.BaseURL}}/api/v1/messages/send \
+  -H "X-API-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "abd4a712-8333-4a92-8eb1-bd922e72e47a",
+    "to": "6289876543210",
+    "text": "Halo! Pesanan #1234 sudah dikirim 🚀"
+  }'</pre>
+<pre>// Response sukses
+{
+  "success": true,
+  "data": {
+    "message_id": "3EB0...",
+    "status": "sent"
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method get">GET</span> <span class="endpoint-path">/api/v1/messages?session_id={id}&amp;limit=50&amp;offset=0</span></div>
+    <div class="endpoint-body">Log pesan masuk/keluar per session.</div>
+  </div>
+</section>
+
+<!-- Webhook -->
+<section class="docs-section" id="webhook">
+  <h2>Webhook — Terima Pesan Masuk</h2>
+  <p>Kalau user balas notif kamu, Whatsar akan POST ke URL project kamu.</p>
+
+  <div class="endpoint">
+    <div class="endpoint-head"><span class="method post">POST</span> <span class="endpoint-path">/api/v1/webhooks</span></div>
+    <div class="endpoint-body">
+<pre>curl -X POST {{.BaseURL}}/api/v1/webhooks \
+  -H "X-API-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://project-kamu.com/api/wa-webhook",
+    "session_id": "abd4a712-8333-4a92-8eb1-bd922e72e47a",
+    "events": ["message.in"],
+    "secret": "webhook-secret-random"
+  }'</pre>
+      <p><code>session_id</code> kosong = webhook global (semua session).</p>
+    </div>
+  </div>
+
+  <h3>Payload yang dikirim ke URL kamu</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>POST https://project-kamu.com/api/wa-webhook
+Content-Type: application/json
+X-Whatsar-Signature: sha256=abc123...   // jika secret diisi
+User-Agent: Whatsar-Webhook/1.0
+
+{
+  "event": "message.in",
+  "session_id": "uuid",
+  "timestamp": "2026-06-16T10:00:00Z",
+  "data": {
+    "from": "6289876543210",
+    "chat": "6289876543210@s.whatsapp.net",
+    "body": "Oke kak, siap",
+    "message_id": "3EB0...",
+    "type": "text",
+    "is_group": false
+  }
+}</pre>
+    </div>
+  </div>
+
+  <h3>Verifikasi signature (PHP)</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>$payload = file_get_contents('php://input');
+$secret  = 'webhook-secret-random';
+$sig     = $_SERVER['HTTP_X_WHATSAR_SIGNATURE'] ?? '';
+$expected = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+
+if (!hash_equals($expected, $sig)) {
+    http_response_code(401);
+    exit('invalid signature');
+}
+
+$data = json_decode($payload, true);
+// proses $data['data']['body'], $data['data']['from'], dll.</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Contoh Kode -->
+<section class="docs-section" id="contoh">
+  <h2>Contoh Integrasi</h2>
+
+  <h3>PHP / Laravel</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>// app/Services/WhatsAppNotif.php
+public function kirim(string $nomor, string $pesan): array
+{
+    $response = Http::withHeaders([
+        'X-API-Key' => config('services.whatsar.key'),
+    ])->post(config('services.whatsar.url') . '/api/v1/messages/send', [
+        'session_id' => config('services.whatsar.session_id'),
+        'to'         => $nomor,
+        'text'       => $pesan,
+    ]);
+
+    return $response->json();
+}
+
+// .env project kamu:
+// WHATSAR_URL={{.BaseURL}}
+// WHATSAR_KEY=your-api-key-dari-pengaturan
+// WHATSAR_SESSION_ID=uuid-dari-dashboard</pre>
+    </div>
+  </div>
+
+  <h3>Node.js</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>async function kirimNotif(to, text) {
+  const res = await fetch(`${process.env.WHATSAR_URL}/api/v1/messages/send`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': process.env.WHATSAR_KEY,
+    },
+    body: JSON.stringify({
+      session_id: process.env.WHATSAR_SESSION_ID,
+      to,
+      text,
+    }),
+  });
+  return res.json();
+}</pre>
+    </div>
+  </div>
+
+  <h3>Python</h3>
+  <div class="endpoint">
+    <div class="endpoint-body">
+<pre>import os, requests
+
+def kirim_notif(nomor: str, pesan: str):
+    r = requests.post(
+        f"{os.environ['WHATSAR_URL']}/api/v1/messages/send",
+        headers={"X-API-Key": os.environ["WHATSAR_KEY"]},
+        json={
+            "session_id": os.environ["WHATSAR_SESSION_ID"],
+            "to": nomor,
+            "text": pesan,
+        },
+        timeout=15,
+    )
+    r.raise_for_status()
+    return r.json()</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Tips -->
+<section class="docs-section" id="tips">
+  <h2>Tips Production</h2>
+  <ul>
+    <li><strong>Nomor format internasional</strong> — Indonesia: <code>62xxx</code> tanpa 0 di depan (bukan <code>08xxx</code>).</li>
+    <li><strong>Cek status dulu</strong> — panggil <code>/sessions/{id}/status</code> sebelum blast notif; handle kalau <code>connected: false</code>.</li>
+    <li><strong>Jangan hardcode API key</strong> — simpan di <code>.env</code> project, jangan commit ke git.</li>
+    <li><strong>Deploy via tunnel</strong> — Cloudflare Tunnel / reverse proxy supaya project cloud bisa akses Whatsar di VPS/STB.</li>
+    <li><strong>Anti-spam</strong> — rate limit 60 req/menit; untuk bulk notif, queue di sisi project kamu.</li>
+    <li><strong>Session terputus?</strong> — cek dashboard; biasanya auto-reconnect. Kalau gagal, scan QR ulang.</li>
+  </ul>
+</section>
+
+<p style="margin-top:2rem;"><a href="/admin">← Kembali ke Dashboard</a></p>
+{{end}}

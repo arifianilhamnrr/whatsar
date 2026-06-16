@@ -1,0 +1,26 @@
+{{define "partials/messages_table.html"}}
+{{if not .Messages}}
+<p>Belum ada pesan.</p>
+{{else}}
+<table>
+  <thead>
+    <tr>
+      <th>Waktu</th>
+      <th>Arah</th>
+      <th>Dari/Ke</th>
+      <th>Pesan</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .Messages}}
+    <tr>
+      <td class="mono">{{fmtTime .CreatedAt}}</td>
+      <td>{{if eq .Direction "in"}}← in{{else}}→ out{{end}}</td>
+      <td class="mono">{{.RemoteJID}}</td>
+      <td>{{.Body}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{end}}
+{{end}}

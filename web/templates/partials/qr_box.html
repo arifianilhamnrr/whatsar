@@ -1,0 +1,22 @@
+{{define "partials/qr_box.html"}}
+{{if .Error}}
+<p style="color: crimson;"><strong>{{.Error}}</strong></p>
+<p><a href="/admin/sessions/new" role="button">Buat session baru</a></p>
+{{else if eq .Status "connected"}}
+<p><strong>✅ Terhubung!</strong> Redirect ke <a href="/admin/sessions/{{.SessionID}}">detail session</a></p>
+<script>setTimeout(() => window.location = '/admin/sessions/{{.SessionID}}', 1500)</script>
+{{else if .ImageBase64}}
+<figure>
+  <img class="qr-img" src="data:image/png;base64,{{.ImageBase64}}" alt="QR Code WhatsApp">
+  <figcaption>QR refresh otomatis setiap 3 detik</figcaption>
+</figure>
+{{else if .Code}}
+<figure>
+  <img class="qr-img" src="data:image/png;base64,{{.ImageBase64}}" alt="QR Code" onerror="this.style.display='none'">
+  <figcaption>Scan QR di WhatsApp · refresh 3 detik</figcaption>
+</figure>
+<p><small class="mono">Kode: {{truncate .Code 50}}</small></p>
+{{else}}
+<p aria-busy="true">Menunggu QR code...</p>
+{{end}}
+{{end}}

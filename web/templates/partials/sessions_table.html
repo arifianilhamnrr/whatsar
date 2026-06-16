@@ -1,0 +1,41 @@
+{{define "partials/sessions_table.html"}}
+{{if not .Sessions}}
+<p>Belum ada session. <a href="/admin/sessions/new">Buat session pertama</a></p>
+{{else}}
+<div class="table-wrap">
+  <table class="sessions-table">
+    <thead>
+      <tr>
+        <th>Session</th>
+        <th>Status</th>
+        <th>Nomor</th>
+        <th class="col-actions">Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Sessions}}
+      <tr>
+        <td class="cell-session">
+          <strong>{{.Name}}</strong>
+          <span class="session-id mono" title="{{.ID}}">{{slice .ID 0 8}}…</span>
+        </td>
+        <td class="cell-status">
+          <div class="status-line">
+            <span class="status-dot {{if .Connected}}online{{end}}"></span>
+            {{statusBadge .Status | safeHTML}}
+            {{if not .InMemory}}<span class="badge warn">off srv</span>{{end}}
+          </div>
+        </td>
+        <td class="cell-phone">
+          {{if .Phone}}<span class="mono">+{{.Phone}}</span>{{else}}<span class="empty">—</span>{{end}}
+        </td>
+        <td class="cell-actions">
+          <a href="/admin/sessions/{{.ID}}" role="button" class="outline btn-sm">Detail</a>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}
+{{end}}

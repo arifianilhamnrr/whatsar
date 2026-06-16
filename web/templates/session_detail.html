@@ -1,0 +1,80 @@
+{{define "session_detail"}}
+{{template "layout_head" .}}
+{{template "session_detail_page" .}}
+{{template "layout_foot" .}}
+{{end}}
+
+{{define "session_detail_page"}}
+<header>
+  <h1>{{.Info.Name}}</h1>
+  <p class="mono">{{.Info.ID}}</p>
+</header>
+
+<div class="grid">
+  <article>
+    <header>Status</header>
+    <p>{{if .Info.Connected}}🟢 Online{{else}}⚫ Offline{{end}} {{statusBadge .Info.Status | safeHTML}}</p>
+    {{if .Info.InMemory}}<small>Loaded di memori</small>{{else}}<small class="badge warn">Tidak loaded — restart server</small>{{end}}
+  </article>
+  <article>
+    <header>Nomor WhatsApp</header>
+    <p>{{if .Info.Phone}}<strong class="mono">+{{.Info.Phone}}</strong>{{else}}<em>Belum paired</em>{{end}}</p>
+    {{if .Info.WAJID}}<small class="mono">{{.Info.WAJID}}</small>{{end}}
+  </article>
+  <article>
+    <header>Pesan</header>
+    <p><span class="mono">{{.Info.MessagesIn}}</span> masuk · <span class="mono">{{.Info.MessagesOut}}</span> keluar</p>
+  </article>
+  <article>
+    <header>Terakhir Update</header>
+    <p class="mono">{{fmtTime .Info.UpdatedAt}}</p>
+    <small>Dibuat {{fmtTime .Info.CreatedAt}}</small>
+  </article>
+</div>
+
+{{if .Info.LastMessage}}
+<article>
+  <header>Pesan Terakhir</header>
+  <p>{{if eq .Info.LastDirection "in"}}←{{else}}→{{end}} {{.Info.LastMessage}}</p>
+  <small class="mono">{{fmtTime .Info.LastMessageAt}}</small>
+</article>
+{{end}}
+
+<article>
+  <h3>Kirim Pesan Tes</h3>
+  <form hx-post="/admin/sessions/{{.Info.ID}}/send"
+        hx-target="#send-result"
+        hx-swap="innerHTML">
+    <div class="grid">
+      <label>Nomor tujuan
+        <input type="text" name="to" placeholder="628123456789" required>
+      </label>
+      <label>Pesan
+        <input type="text" name="text" placeholder="Halo dari whatsar" required>
+      </label>
+    </div>
+    <button type="submit">Kirim</button>
+  </form>
+  <div id="send-result"></div>
+</article>
+
+<article>
+  <h3>Log Pesan Session</h3>
+  <div hx-get="/admin/partials/messages?session_id={{.Info.ID}}"
+       hx-trigger="load, every 5s"
+       hx-swap="innerHTML">Memuat...</div>
+</article>
+
+<div class="actions">
+  <a href="/admin">← Dashboard</a>
+  {{if not .Info.Connected}}
+  <a href="/admin/sessions/new?id={{.Info.ID}}" role="button" class="outline">Scan QR</a>
+  {{end}}
+  <button class="outline"
+          hx-delete="/admin/sessions/{{.Info.ID}}"
+          hx-confirm="Hapus session ini?"
+          hx-on::after-request="if(event.detail.successful) window.location='/admin'">
+    Hapus Session
+  </button>
+</div>
+{{end}}

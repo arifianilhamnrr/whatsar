@@ -1,0 +1,133 @@
+{{define "partials/dashboard_content.html"}}
+<!-- Statistik -->
+<div class="grid" style="margin-bottom: 1.5rem;">
+  <article>
+    <header>Session Aktif</header>
+    <h2 style="margin:0;color:#065f46;">{{.Stats.Connected}}</h2>
+    <small>dari {{.Stats.TotalSessions}} total</small>
+  </article>
+  <article>
+    <header>Menunggu QR</header>
+    <h2 style="margin:0;color:#92400e;">{{.Stats.WaitingQR}}</h2>
+    <small>perlu scan pairing</small>
+  </article>
+  <article>
+    <header>Offline / Putus</header>
+    <h2 style="margin:0;color:#6b7280;">{{.Stats.Disconnected}}</h2>
+    <small>tidak terkoneksi</small>
+  </article>
+  <article>
+    <header>Total Pesan</header>
+    <h2 style="margin:0;">{{.Stats.TotalMessages}}</h2>
+    <small>masuk + keluar</small>
+  </article>
+</div>
+
+<div class="slot-bar">
+  {{if .Stats.UnlimitedSlots}}
+  <strong>{{.Stats.PairedSlots}}</strong> nomor terhubung · {{.Stats.InMemorySessions}} di memori
+  {{else}}
+  <strong>{{.Stats.PairedSlots}} / {{.Stats.MaxSessions}}</strong> nomor terhubung
+  {{if gt .Stats.PendingQRSlots 0}} · {{.Stats.PendingQRSlots}} menunggu QR{{end}}
+  {{end}}
+  {{if gt .Stats.Failed 0}} · <span style="color:#991b1b;">{{.Stats.Failed}} gagal</span>{{end}}
+</div>
+
+<section class="sessions-panel">
+  <div class="sessions-panel__head">
+    <h3>Session WhatsApp</h3>
+    <a href="/admin/sessions/new" role="button" class="outline btn-sm">+ Session</a>
+  </div>
+
+  {{if not .Sessions}}
+  <p>Belum ada session. <a href="/admin/sessions/new">Buat session pertama</a></p>
+  {{else}}
+  <div class="table-wrap">
+    <table class="sessions-table">
+      <thead>
+        <tr>
+          <th>Session</th>
+          <th>Status</th>
+          <th>Nomor</th>
+          <th class="col-hide-sm">Aktivitas</th>
+          <th class="col-actions">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Sessions}}
+        <tr>
+          <td class="cell-session">
+            <strong>{{.Name}}</strong>
+            <span class="session-id mono" title="{{.ID}}">{{slice .ID 0 8}}…</span>
+          </td>
+          <td class="cell-status">
+            <div class="status-line">
+              <span class="status-dot {{if .Connected}}online{{end}}" title="{{if .Connected}}Online{{else}}Offline{{end}}"></span>
+              {{statusBadge .Status | safeHTML}}
+              {{if not .InMemory}}<span class="badge warn">off srv</span>{{end}}
+            </div>
+          </td>
+          <td class="cell-phone">
+            {{if .Phone}}
+              <span class="mono">+{{.Phone}}</span>
+            {{else}}
+              <span class="empty">belum paired</span>
+            {{end}}
+          </td>
+          <td class="cell-activity col-hide-sm">
+            <span class="counts mono">{{.MessagesIn}} masuk · {{.MessagesOut}} keluar</span>
+            {{if .LastMessage}}
+              <span class="last-msg" title="{{.LastMessage}}">
+                {{if eq .LastDirection "in"}}←{{else}}→{{end}} {{truncate .LastMessage 36}}
+              </span>
+            {{else}}
+              <span class="last-msg">belum ada pesan</span>
+            {{end}}
+          </td>
+          <td class="cell-actions">
+            <div class="btn-group">
+              <a href="/admin/sessions/{{.ID}}" role="button" class="outline btn-sm">Detail</a>
+              {{if or (eq .Status "qr_ready") (eq .Status "connecting") (eq .Status "created")}}
+              <a href="/admin/sessions/new?id={{.ID}}" role="button" class="btn-sm">QR</a>
+              {{end}}
+              <button type="button" class="outline secondary btn-sm danger"
+                      hx-delete="/admin/sessions/{{.ID}}"
+                      hx-confirm="Hapus session {{.Name}}?"
+                      hx-target="closest tr"
+                      hx-swap="outerHTML swap:0.2s">Hapus</button>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{end}}
+</section>
+
+<!-- Pesan Terbaru -->
+<h3 style="margin-top:2rem;">Pesan Terbaru</h3>
+{{if not .RecentMessages}}
+<p><em>Belum ada pesan tercatat.</em></p>
+{{else}}
+<table>
+  <thead>
+    <tr><th>Waktu</th><th>Session</th><th>Arah</th><th>Dari/Ke</th><th>Isi</th></tr>
+  </thead>
+  <tbody>
+    {{range .RecentMessages}}
+    <tr>
+      <td class="mono"><small>{{fmtTime .CreatedAt}}</small></td>
+      <td class="mono"><small>{{slice .SessionID 0 8}}…</small></td>
+      <td>{{if eq .Direction "in"}}<span style="color:green;">← masuk</span>{{else}}<span style="color:blue;">→ keluar</span>{{end}}</td>
+      <td class="mono"><small>{{.RemoteJID}}</small></td>
+      <td>{{truncate .Body 60}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+<p><a href="/admin/messages">Lihat semua pesan →</a></p>
+{{end}}
+
+<p style="margin-top:1rem;"><small>⟳ Auto-refresh setiap 5 detik · {{fmtTimeNow}}</small></p>
+{{end}}

@@ -1,0 +1,11 @@
+{{define "partials/status_box.html"}}
+{{if .Error}}
+<p style="color: crimson;">{{.Error}}</p>
+{{else}}
+<p>
+  Status: {{statusBadge .Status | safeHTML}}
+  {{if .Connected}} — <strong>online</strong>{{end}}
+  {{if .Phone}} — {{.Phone}}{{end}}
+</p>
+{{end}}
+{{end}}

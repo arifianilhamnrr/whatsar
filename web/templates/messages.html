@@ -1,0 +1,17 @@
+{{define "messages"}}
+{{template "layout_head" .}}
+{{template "messages_page" .}}
+{{template "layout_foot" .}}
+{{end}}
+
+{{define "messages_page"}}
+<header>
+  <h1>Log Pesan</h1>
+</header>
+
+<div hx-get="/admin/partials/messages"
+     hx-trigger="load, every 5s"
+     hx-swap="innerHTML">
+  Memuat...
+</div>
+{{end}}

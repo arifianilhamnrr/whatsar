@@ -1,0 +1,45 @@
+{{define "session_new"}}
+{{template "layout_head" .}}
+{{template "session_new_page" .}}
+{{template "layout_foot" .}}
+{{end}}
+
+{{define "session_new_page"}}
+<header>
+  <h1>Session Baru</h1>
+  <p>Scan QR via WhatsApp → Perangkat Tertaut → Tautkan perangkat</p>
+</header>
+
+{{if not .SessionID}}
+<article>
+  {{if .Error}}<p style="color: crimson;"><strong>{{.Error}}</strong></p>{{end}}
+  <form method="POST" action="/admin/sessions">
+    <label>Nama session
+      <input type="text" name="name" placeholder="toko, notif, dll." value="default">
+    </label>
+    <button type="submit">Buat &amp; Tampilkan QR</button>
+  </form>
+</article>
+{{else}}
+<article>
+  <p>Session: <span class="mono">{{.SessionID}}</span></p>
+
+  <div id="status-box"
+       hx-get="/admin/sessions/{{.SessionID}}/status-partial"
+       hx-trigger="load, every 3s"
+       hx-swap="innerHTML">
+    Memuat status...
+  </div>
+
+  <div id="qr-box"
+       hx-get="/admin/sessions/{{.SessionID}}/qr-partial"
+       hx-trigger="load, every 3s"
+       hx-swap="innerHTML"
+       style="margin-top: 1rem;">
+    Memuat QR...
+  </div>
+
+  <p style="margin-top: 1rem;"><a href="/admin/sessions/{{.SessionID}}">→ Detail session</a></p>
+</article>
+{{end}}
+{{end}}
