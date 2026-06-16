@@ -313,7 +313,7 @@ func (m *Manager) dbAsync(fn func()) {
 	m.dbQueue <- fn
 }
 
-func (m *Manager) Close() {
+func (m *Manager) Shutdown(ctx context.Context) {
 	m.mu.Lock()
 	sessions := make([]*Session, 0, len(m.sessions))
 	for _, s := range m.sessions {
@@ -322,17 +322,41 @@ func (m *Manager) Close() {
 	m.mu.Unlock()
 
 	for _, s := range sessions {
-		s.disconnect()
+		s.gracefulDisconnect()
 	}
 
+	m.drainDBQueue(ctx)
+}
+
+func (m *Manager) drainDBQueue(ctx context.Context) {
+	if m.dbQueue == nil {
+		return
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case fn, ok := <-m.dbQueue:
+			if !ok {
+				return
+			}
+			fn()
+		default:
+			return
+		}
+	}
+}
+
+func (m *Manager) Close() {
+	if m.dbQueue != nil {
+		close(m.dbQueue)
+		m.dbQueue = nil
+	}
 	if m.container != nil {
 		m.container.Close()
 	}
 	if m.db != nil {
 		m.db.Close()
-	}
-	if m.dbQueue != nil {
-		close(m.dbQueue)
 	}
 	releaseInstanceLock(m.lockFile, m.dataDir)
 }

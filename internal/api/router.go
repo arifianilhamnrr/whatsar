@@ -28,9 +28,15 @@ func NewRouter(cfg *config.Config, mgr *wa.Manager, adminH *admin.Handler) http.
 	msgH := &handler.Message{Manager: mgr}
 	whH := &handler.Webhook{Manager: mgr}
 
+	limit := cfg.RateLimitPerMin
+	if limit <= 0 {
+		limit = 60
+	}
+
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(chimw.RequestSize(72 << 20))
 		r.Use(middleware.APIKeyAuth(adminH.Keys))
-		r.Use(middleware.RateLimit(60))
+		r.Use(middleware.RateLimit(limit))
 
 		r.Post("/sessions", sessH.Create)
 		r.Get("/sessions", sessH.List)

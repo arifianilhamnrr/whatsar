@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/whatsar/whatsar/internal/api/validate"
 	"github.com/whatsar/whatsar/internal/httputil"
 	"github.com/whatsar/whatsar/internal/wa"
 )
@@ -20,6 +21,11 @@ type createSessionReq struct {
 func (h *Session) Create(w http.ResponseWriter, r *http.Request) {
 	var req createSessionReq
 	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	if err := validate.SessionName(req.Name); err != nil {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
 
 	sess, err := h.Manager.Create(r.Context(), req.Name)
 	if err != nil {
@@ -45,6 +51,10 @@ func (h *Session) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *Session) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if err := validate.SessionID(id); err != nil {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
 	info, err := h.Manager.GetSessionInfo(r.Context(), id)
 	if err != nil {
 		httputil.Error(w, http.StatusNotFound, "SESSION_NOT_FOUND", err.Error())
@@ -55,6 +65,10 @@ func (h *Session) Get(w http.ResponseWriter, r *http.Request) {
 
 func (h *Session) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if err := validate.SessionID(id); err != nil {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
 	if err := h.Manager.Delete(r.Context(), id); err != nil {
 		httputil.Error(w, http.StatusBadRequest, "DELETE_FAILED", err.Error())
 		return
@@ -64,6 +78,10 @@ func (h *Session) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *Session) QR(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if err := validate.SessionID(id); err != nil {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
 	qr, err := h.Manager.GetQRInfo(r.Context(), id)
 	if err != nil {
 		httputil.Error(w, http.StatusNotFound, "SESSION_NOT_FOUND", err.Error())
@@ -74,6 +92,10 @@ func (h *Session) QR(w http.ResponseWriter, r *http.Request) {
 
 func (h *Session) Status(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if err := validate.SessionID(id); err != nil {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
 	info, err := h.Manager.GetSessionInfo(r.Context(), id)
 	if err != nil {
 		httputil.Error(w, http.StatusNotFound, "SESSION_NOT_FOUND", err.Error())

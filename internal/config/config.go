@@ -14,8 +14,9 @@ type Config struct {
 	APIKey         string
 	AdminPassword  string
 	MaxSessions    int
-	LogLevel       string
-	PublicURL      string
+	LogLevel          string
+	PublicURL         string
+	RateLimitPerMin   int
 }
 
 func Load() (*Config, error) {
@@ -27,6 +28,7 @@ func Load() (*Config, error) {
 
 	port, _ := strconv.Atoi(envOr("WHATSAR_PORT", "8080"))
 	maxSessions, _ := strconv.Atoi(envOr("WHATSAR_MAX_SESSIONS", "5"))
+	rateLimit, _ := strconv.Atoi(envOr("WHATSAR_RATE_LIMIT", "60"))
 
 	return &Config{
 		Host:          envOr("WHATSAR_HOST", "127.0.0.1"),
@@ -36,7 +38,8 @@ func Load() (*Config, error) {
 		AdminPassword: envOr("WHATSAR_ADMIN_PASSWORD", "admin"),
 		MaxSessions:   maxSessions,
 		LogLevel:      envOr("WHATSAR_LOG_LEVEL", "info"),
-		PublicURL:     envOr("WHATSAR_PUBLIC_URL", ""),
+		PublicURL:       envOr("WHATSAR_PUBLIC_URL", ""),
+		RateLimitPerMin: rateLimit,
 	}, nil
 }
 

@@ -154,3 +154,9 @@ func (s *Session) disconnect() {
 	}
 	s.setStatus(StatusStopped)
 }
+
+func (s *Session) gracefulDisconnect() {
+	if s.client != nil && s.client.IsConnected() {
+		s.client.Disconnect()
+	}
+}

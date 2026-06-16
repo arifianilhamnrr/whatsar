@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/whatsar/whatsar/internal/api/validate"
 	"github.com/whatsar/whatsar/internal/httputil"
 	"github.com/whatsar/whatsar/internal/store"
 	"github.com/whatsar/whatsar/internal/wa"
@@ -27,12 +28,26 @@ func (h *Webhook) Register(w http.ResponseWriter, r *http.Request) {
 		httputil.Error(w, http.StatusBadRequest, "INVALID_JSON", "Body tidak valid")
 		return
 	}
-	if req.URL == "" {
-		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "url wajib diisi")
+	if err := validate.WebhookURL(req.URL); err != nil {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
 		return
+	}
+	if req.SessionID != "" {
+		if err := validate.SessionID(req.SessionID); err != nil {
+			httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+			return
+		}
 	}
 	if len(req.Events) == 0 {
 		req.Events = []string{"message.in"}
+	}
+	if err := validate.WebhookEvents(req.Events); err != nil {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+	if err := validate.WebhookSecret(req.Secret); err != nil {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
 	}
 
 	wh := &store.WebhookRecord{

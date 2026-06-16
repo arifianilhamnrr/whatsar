@@ -92,9 +92,12 @@ func main() {
 	}()
 
 	<-rootCtx.Done()
-	log.Println("shutting down...")
+	log.Println("shutting down gracefully...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
 	_ = srv.Shutdown(shutdownCtx)
+	mgr.Shutdown(shutdownCtx)
+	log.Println("whatsar stopped")
 }

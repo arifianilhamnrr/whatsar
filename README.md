@@ -166,7 +166,7 @@ curl -X POST http://127.0.0.1:8080/api/v1/messages/send \
 | `POST` | `/api/v1/webhooks` | Daftarkan webhook pesan masuk |
 | `GET` | `/api/v1/messages` | Log pesan per session |
 
-Detail lengkap: **Admin → Dokumentasi** atau [web/templates/docs.html](web/templates/docs.html).
+Detail lengkap: [API.md](API.md) · **Admin → Dokumentasi** · [examples/](examples/)
 
 ---
 
@@ -232,7 +232,7 @@ Dirancang untuk jalan di **STB Armbian HG680P (ARM, 2GB RAM)**:
 - [x] Fase 0–3 — Engine, REST API, Admin UI
 - [x] Fase 4 — Media, dokumen, retry queue, webhook backoff
 - [x] Fase 5 — Installer, systemd, GitHub Releases multi-arch
-- [ ] Fase 6 — Hardening, integration test, `API.md`
+- [x] Fase 6 — Hardening, integration test, `API.md`
 
 ## Release (maintainer)
 

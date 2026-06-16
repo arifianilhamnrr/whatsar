@@ -161,12 +161,12 @@ irm https://raw.githubusercontent.com/arifianilhamnrr/whatsar/main/install.ps1 |
 
 ### Fase 6 — Hardening & Dokumentasi (Hari 15+)
 
-- [ ] Rate limiting per API key
-- [ ] Validasi input ketat
-- [ ] Graceful shutdown (simpan state WA)
-- [ ] Integration test dasar
-- [ ] `API.md` — dokumentasi endpoint untuk developer
-- [ ] Contoh client: PHP (Laragon), curl, JavaScript fetch
+- [x] Rate limiting per API key
+- [x] Validasi input ketat
+- [x] Graceful shutdown (simpan state WA)
+- [x] Integration test dasar
+- [x] `API.md` — dokumentasi endpoint untuk developer
+- [x] Contoh client: PHP (Laragon), curl, JavaScript fetch
 
 ---
 

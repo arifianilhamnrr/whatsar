@@ -18,7 +18,7 @@ func APIKeyAuth(keys *admin.APIKeyStore) func(http.Handler) http.Handler {
 				httputil.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "API key tidak valid")
 				return
 			}
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(w, r.WithContext(WithAPIKey(r.Context(), key)))
 		})
 	}
 }
