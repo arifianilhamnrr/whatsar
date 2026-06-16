@@ -19,7 +19,11 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	_ = godotenv.Load()
+	envFile := os.Getenv("WHATSAR_ENV_FILE")
+	if envFile == "" {
+		envFile = ".env"
+	}
+	_ = godotenv.Load(envFile)
 
 	port, _ := strconv.Atoi(envOr("WHATSAR_PORT", "8080"))
 	maxSessions, _ := strconv.Atoi(envOr("WHATSAR_MAX_SESSIONS", "5"))

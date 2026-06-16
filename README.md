@@ -65,7 +65,25 @@ go build -o whatsar ./cmd/server
 ./whatsar
 ```
 
-Installer one-liner (Fase 5 — work in progress): `sudo bash install.sh`
+### Production (one-liner)
+
+**Linux / STB / VPS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/arifianilhamnrr/whatsar/main/install.sh | sudo bash
+```
+
+Opsi: `--port 8080 --with-swap --with-tunnel --no-systemd`
+
+**Windows (PowerShell as Admin):**
+
+```powershell
+irm https://raw.githubusercontent.com/arifianilhamnrr/whatsar/main/install.ps1 | iex
+```
+
+Install otomatis: download binary dari [GitHub Releases](https://github.com/arifianilhamnrr/whatsar/releases), generate `.env` + API key, setup systemd / Windows Service.
+
+> Release pertama: push tag `v0.1.0` → GitHub Actions build multi-arch (amd64, arm64, armv7, windows).
 
 ---
 
@@ -213,8 +231,20 @@ Dirancang untuk jalan di **STB Armbian HG680P (ARM, 2GB RAM)**:
 
 - [x] Fase 0–3 — Engine, REST API, Admin UI
 - [x] Fase 4 — Media, dokumen, retry queue, webhook backoff
-- [ ] Fase 5 — Installer, systemd, GitHub Releases multi-arch
+- [x] Fase 5 — Installer, systemd, GitHub Releases multi-arch
 - [ ] Fase 6 — Hardening, integration test, `API.md`
+
+## Release (maintainer)
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+# GitHub Actions → build & publish ke Releases
+
+# Lokal:
+make release
+./scripts/build-release.sh v0.1.0
+```
 
 ---
 

@@ -132,27 +132,27 @@ SessionManager.SendText() → kirim pesan
 
 ### Fase 5 — Installer Bash + Deploy (Hari 13–14)
 
-- [ ] `install.sh` di root repo — one-liner install dari GitHub
-- [ ] Deteksi otomatis: OS, arch (arm64/armv7/amd64), RAM
-- [ ] Download binary dari GitHub Releases (pre-built per arch)
-- [ ] Setup user, direktori, permission (`/opt/whatsar`)
-- [ ] Generate config & API key otomatis
-- [ ] Systemd service `whatsar.service`
-- [ ] Systemd service `cloudflared.service` (opsional, interaktif)
-- [ ] Swap 512MB–1GB jika RAM ≤ 2GB
-- [ ] Log rotation (`logrotate`)
-- [ ] GitHub Actions: build & publish release multi-arch
+- [x] `install.sh` di root repo — one-liner install dari GitHub
+- [x] Deteksi otomatis: OS, arch (arm64/armv7/amd64), RAM
+- [x] Download binary dari GitHub Releases (pre-built per arch)
+- [x] Setup user, direktori, permission (`/opt/whatsar`)
+- [x] Generate config & API key otomatis (`.env`)
+- [x] Systemd service `whatsar.service`
+- [x] Systemd service `cloudflared.service` (opsional, interaktif)
+- [x] Swap 512MB–1GB jika RAM ≤ 2GB
+- [x] Log rotation (`logrotate`)
+- [x] GitHub Actions: build & publish release multi-arch
 
 **Cara install (target):**
 
 Linux / STB / VPS:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<user>/whatsar/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/arifianilhamnrr/whatsar/main/install.sh | sudo bash
 ```
 
 Windows (PowerShell as Admin):
 ```powershell
-irm https://raw.githubusercontent.com/<user>/whatsar/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/arifianilhamnrr/whatsar/main/install.ps1 | iex
 ```
 
 **Deliverable:** API live di `https://whatsar.<domain>.com`, install satu command di STB/VPS/Windows.
