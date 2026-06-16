@@ -23,10 +23,13 @@ func (h *Health) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	pendingQueue, _ := h.Manager.AppDB().CountPendingQueue(r.Context())
+
 	httputil.JSON(w, http.StatusOK, map[string]any{
 		"status":             "ok",
 		"uptime_seconds":     int(time.Since(startTime).Seconds()),
 		"sessions_total":     len(sessions),
 		"sessions_connected": connected,
+		"queue_pending":      pendingQueue,
 	})
 }

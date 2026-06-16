@@ -78,6 +78,24 @@ func (db *DB) migrate(ctx context.Context) error {
 			value      TEXT NOT NULL,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
+		`CREATE TABLE IF NOT EXISTS message_queue (
+			id           TEXT PRIMARY KEY,
+			session_id   TEXT NOT NULL,
+			recipient    TEXT NOT NULL,
+			msg_type     TEXT NOT NULL DEFAULT 'text',
+			body         TEXT,
+			media_url    TEXT,
+			caption      TEXT,
+			reply_to     TEXT,
+			quoted_text  TEXT,
+			attempts     INTEGER NOT NULL DEFAULT 0,
+			max_attempts INTEGER NOT NULL DEFAULT 5,
+			next_retry_at DATETIME NOT NULL,
+			status       TEXT NOT NULL DEFAULT 'pending',
+			last_error   TEXT,
+			created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_queue_pending ON message_queue(status, next_retry_at)`,
 	}
 
 	for _, stmt := range stmts {

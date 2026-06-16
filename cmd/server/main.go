@@ -48,6 +48,10 @@ func main() {
 
 	dispatcher = webhook.NewDispatcher(mgr)
 
+	rootCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	mgr.StartQueueWorker(rootCtx)
+
 	// Reconnect paired sessions
 	for _, sess := range mgr.List() {
 		if sess.Phone() != "" {
@@ -87,10 +91,7 @@ func main() {
 		}
 	}()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	<-ctx.Done()
+	<-rootCtx.Done()
 	log.Println("shutting down...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

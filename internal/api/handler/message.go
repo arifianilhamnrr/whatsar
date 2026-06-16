@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/whatsar/whatsar/internal/httputil"
 	"github.com/whatsar/whatsar/internal/store"
@@ -15,9 +16,16 @@ type Message struct {
 }
 
 type sendMessageReq struct {
-	SessionID string `json:"session_id"`
-	To        string `json:"to"`
-	Text      string `json:"text"`
+	SessionID   string `json:"session_id"`
+	To          string `json:"to"`
+	Text        string `json:"text"`
+	Type        string `json:"type"`
+	ImageURL    string `json:"image_url"`
+	ImageBase64 string `json:"image_base64"`
+	Caption     string `json:"caption"`
+	ReplyTo     string `json:"reply_to"`
+	QuotedText  string `json:"quoted_text"`
+	Retry       bool   `json:"retry"`
 }
 
 func (h *Message) Send(w http.ResponseWriter, r *http.Request) {
@@ -26,21 +34,46 @@ func (h *Message) Send(w http.ResponseWriter, r *http.Request) {
 		httputil.Error(w, http.StatusBadRequest, "INVALID_JSON", "Body tidak valid")
 		return
 	}
-	if req.SessionID == "" || req.To == "" || req.Text == "" {
-		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "session_id, to, dan text wajib diisi")
+	if req.SessionID == "" || req.To == "" {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "session_id dan to wajib diisi")
 		return
 	}
 
-	msgID, err := h.Manager.SendText(r.Context(), req.SessionID, req.To, req.Text)
+	msgType := strings.ToLower(strings.TrimSpace(req.Type))
+	if msgType == "" {
+		msgType = "text"
+	}
+	if msgType == "text" && req.Text == "" {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "text wajib untuk tipe text")
+		return
+	}
+	if msgType == "image" && req.ImageURL == "" && req.ImageBase64 == "" {
+		httputil.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "image_url atau image_base64 wajib untuk tipe image")
+		return
+	}
+
+	result, err := h.Manager.SendOutgoing(r.Context(), wa.OutgoingMessage{
+		SessionID:  req.SessionID,
+		To:         req.To,
+		Type:       msgType,
+		Text:       req.Text,
+		ImageURL:   req.ImageURL,
+		ImageB64:   req.ImageBase64,
+		Caption:    req.Caption,
+		ReplyTo:    req.ReplyTo,
+		QuotedText: req.QuotedText,
+		QueueRetry: req.Retry,
+	})
 	if err != nil {
 		httputil.Error(w, http.StatusBadRequest, "SEND_FAILED", err.Error())
 		return
 	}
 
-	httputil.JSON(w, http.StatusOK, map[string]string{
-		"message_id": msgID,
-		"status":     "sent",
-	})
+	status := http.StatusOK
+	if result.Queued {
+		status = http.StatusAccepted
+	}
+	httputil.JSON(w, status, result)
 }
 
 func (h *Message) List(w http.ResponseWriter, r *http.Request) {

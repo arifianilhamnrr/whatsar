@@ -164,8 +164,15 @@
         <thead><tr><th>Field</th><th>Wajib</th><th>Keterangan</th></tr></thead>
         <tbody>
           <tr><td><code>session_id</code></td><td>✅</td><td>UUID session yang <code>connected</code></td></tr>
-          <tr><td><code>to</code></td><td>✅</td><td>Nomor tujuan: <code>6281234567890</code> atau <code>+62 812-3456-7890</code></td></tr>
-          <tr><td><code>text</code></td><td>✅</td><td>Isi pesan (plain text)</td></tr>
+          <tr><td><code>to</code></td><td>✅</td><td>Nomor <code>628...</code>, JID grup <code>120363...@g.us</code>, atau JID lengkap</td></tr>
+          <tr><td><code>type</code></td><td>—</td><td><code>text</code> (default) atau <code>image</code></td></tr>
+          <tr><td><code>text</code></td><td>✅*</td><td>Isi pesan teks (*wajib untuk type text)</td></tr>
+          <tr><td><code>image_url</code></td><td>—</td><td>URL gambar (type image)</td></tr>
+          <tr><td><code>image_base64</code></td><td>—</td><td>Gambar base64 (alternatif URL)</td></tr>
+          <tr><td><code>caption</code></td><td>—</td><td>Caption gambar</td></tr>
+          <tr><td><code>reply_to</code></td><td>—</td><td>ID pesan WA untuk reply/quote</td></tr>
+          <tr><td><code>quoted_text</code></td><td>—</td><td>Teks yang di-quote (opsional)</td></tr>
+          <tr><td><code>retry</code></td><td>—</td><td><code>true</code> = masuk antrian retry kalau gagal kirim</td></tr>
         </tbody>
       </table>
 <pre>curl -X POST {{.BaseURL}}/api/v1/messages/send \
@@ -177,13 +184,10 @@
     "text": "Halo! Pesanan #1234 sudah dikirim 🚀"
   }'</pre>
 <pre>// Response sukses
-{
-  "success": true,
-  "data": {
-    "message_id": "3EB0...",
-    "status": "sent"
-  }
-}</pre>
+{ "success": true, "data": { "message_id": "3EB0...", "status": "sent" } }
+
+// Gagal kirim + retry:true → HTTP 202
+{ "success": true, "data": { "status": "queued", "queued": true, "queue_id": "uuid" } }</pre>
     </div>
   </div>
 

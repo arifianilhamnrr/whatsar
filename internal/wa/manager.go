@@ -276,11 +276,16 @@ func (m *Manager) List() []*Session {
 }
 
 func (m *Manager) SendText(ctx context.Context, sessionID, to, text string) (string, error) {
-	sess, err := m.Get(sessionID)
+	res, err := m.SendOutgoing(ctx, OutgoingMessage{
+		SessionID: sessionID,
+		To:        to,
+		Text:      text,
+		Type:      "text",
+	})
 	if err != nil {
 		return "", err
 	}
-	return sess.SendText(ctx, to, text)
+	return res.MessageID, nil
 }
 
 func (m *Manager) Delete(ctx context.Context, sessionID string) error {

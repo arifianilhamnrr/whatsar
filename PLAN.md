@@ -116,11 +116,12 @@ SessionManager.SendText() → kirim pesan
 
 ### Fase 4 — Media & Fitur Lanjut (Hari 10–12)
 
-- [ ] Kirim gambar / dokumen (download & upload)
-- [ ] Reply & quote message
-- [ ] Grup: kirim pesan ke grup
-- [ ] Retry queue untuk pesan gagal (SQLite-backed)
-- [ ] Webhook retry dengan exponential backoff
+- [x] Kirim gambar (URL / base64) + caption
+- [x] Reply & quote message (`reply_to`, `quoted_text`)
+- [x] Grup: kirim ke JID `...@g.us`
+- [x] Retry queue untuk pesan gagal (SQLite-backed)
+- [x] Webhook retry dengan exponential backoff
+- [ ] Kirim dokumen/PDF (backlog)
 
 **Prioritas rendah (backlog):**
 - Broadcast / bulk send
